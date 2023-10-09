@@ -1,0 +1,21 @@
+alquitable package
+==================
+
+Submodules
+----------
+
+alquitable.losses module
+------------------------
+
+.. automodule:: alquitable.losses
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: alquitable
+   :members:
+   :undoc-members:
+   :show-inheritance:

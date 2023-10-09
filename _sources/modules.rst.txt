@@ -1,0 +1,7 @@
+alquitable
+==========
+
+.. toctree::
+   :maxdepth: 4
+
+   alquitable
