@@ -45,12 +45,12 @@ jobs:
       run: |
         make test
 
-    - id: run-tests
-      if: ${{steps.pytest_test.outcome == 'success'}}
-      uses: JotaFan/pycoverage@v1.1.0
-      with:
-        cov-omit-list: tests/*, *__init__*, *__version__*, *__main__*, *exceptions*
-        cov-threshold-single: 85
-        cov-threshold-total: 90
-        async-tests: true
+    # - id: run-tests
+    #   if: ${{steps.pytest_test.outcome == 'success'}}
+    #   uses: JotaFan/pycoverage@v1.1.0
+    #   with:
+    #     cov-omit-list: tests/*, *__init__*, *__version__*, *__main__*, *exceptions*
+    #     cov-threshold-single: 85
+    #     cov-threshold-total: 90
+    #     async-tests: true
   

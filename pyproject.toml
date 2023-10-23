@@ -16,7 +16,7 @@ jax = {version = "*", optional=true}
 pytorch = {version = "*", optional=true}
 
 [tool.poetry.extras]
-jax = ["jax"]
+jax = ["jax", "jaxlib"]
 tensorflow = ["tensorflow"]
 torch = ["pytorch"]
 
