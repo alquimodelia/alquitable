@@ -21,6 +21,13 @@ def mean_squared_diff_error(y_true, y_pred):
     return ops.mean(ops.abs(ops.square(y_pred) - ops.square(y_true)))
 
 @keras_core.saving.register_keras_serializable()
+def mean_squared_error(y_true, y_pred):
+    erro = y_pred - y_true
+    se = ops.square(erro)
+    mse = ops.mean(se)
+    return mse
+
+@keras_core.saving.register_keras_serializable()
 def mean_squared_diff_log_error(y_true, y_pred):
     return ops.mean(
         ops.abs(

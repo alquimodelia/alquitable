@@ -21,7 +21,7 @@ foreCNN_model = foreCNN.architeture()
 
 input_shape = (10, *foreCNN_model.input_shape[1:])
 output_shape = (10, *foreCNN_model.output_shape[1:])
-print(input_shape)
+
 dummy_X = np.full(input_shape, 1)
 dummy_Y = np.full(output_shape, 1)
 
