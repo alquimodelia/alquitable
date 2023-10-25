@@ -4,6 +4,15 @@ version = "0.0.1"
 description = "Keras-core based tools to enhance Alquimodelia"
 authors = ["João Santos <jotaflame@gmail.com>"]
 readme = "README.md"
+license = "LICENSE"
+homepage = "https://github.com/alquimodelia/alquitable"
+repository = "https://github.com/alquimodelia/alquitable"
+documentation = "https://alquimodelia.github.io/alquitable/"
+keywords = ["python", "machine learning", "modeling", "keras"]
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/alquimodelia/alquitable/issues"
+"Source Code" = "https://github.com/alquimodelia/alquitable"
 
 [tool.poetry.dependencies]
 python = "^3.9"

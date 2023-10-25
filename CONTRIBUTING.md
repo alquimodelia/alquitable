@@ -1,6 +1,6 @@
-# Contributing to Forecat
+# Contributing to Alquitable
 
-Thank you for considering contributing to Forecat! We appreciate your interest in making this project better.
+Thank you for considering contributing to Alquitable! We appreciate your interest in making this project better.
 
 ## Code of Conduct
 

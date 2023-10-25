@@ -27,8 +27,8 @@ jobs:
       - name: Build Pages
         if: ${{steps.filter.outputs.package == 'true' }}
         run: |
-            make init-docs
-            make docs
+            make init-dev
+            KERAS_BACKEND=jax make docs
  
       - name: Deploy Pages
         if: ${{steps.filter.outputs.package == 'true' }}
