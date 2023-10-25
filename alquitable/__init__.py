@@ -1,2 +1,3 @@
-from alquitable import losses
-__all__ = ["losses"]
+from alquitable import callbacks, losses
+
+__all__ = ["losses", "callbacks"]
