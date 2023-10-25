@@ -4,6 +4,14 @@ alquitable package
 Submodules
 ----------
 
+alquitable.callbacks module
+---------------------------
+
+.. automodule:: alquitable.callbacks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 alquitable.losses module
 ------------------------
 
