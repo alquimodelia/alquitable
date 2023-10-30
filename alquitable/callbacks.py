@@ -32,17 +32,16 @@ def update_history_dict(new_log, old_log):
                 old = old_log[key]
                 new = new_log.get(key, [])
                 if not isinstance(new, list):
-                    new=[new]
+                    new = [new]
                 if not isinstance(old, list):
-                    old=[old]
+                    old = [old]
                 old = [f for f in old if f]
-                old = [f for f in old if not  math.isnan(f)]
+                old = [f for f in old if not math.isnan(f)]
                 history_to_save[key] = old + new
     for key in new_log:
         if key not in history_to_save:
             history_to_save[key] = new_log[key]
     return history_to_save
-
 
 
 class SaveModelCallback(Callback):
@@ -53,7 +52,14 @@ class SaveModelCallback(Callback):
     It also saves the training logs to a JSON file.
     """
 
-    def __init__(self, save_frequency, model_keras_filename, model_log_filename, logs=None, start_epoch=0):
+    def __init__(
+        self,
+        save_frequency,
+        model_keras_filename,
+        model_log_filename,
+        logs=None,
+        start_epoch=0,
+    ):
         """
         Initialize the SaveModelCallback.
 
@@ -100,7 +106,6 @@ class SaveModelCallback(Callback):
                 json.dump(self.logs, f)
 
 
-
 class StopOnNanLoss(Callback):
     """
     A Keras callback that stops training when loss is NaN or Infinity.
@@ -111,7 +116,15 @@ class StopOnNanLoss(Callback):
     training, and saves the training logs to a JSON file.
     """
 
-    def __init__(self, filepath, model_log_filename, logs=None, save_frequency=1, model_keras_filename=None, start_epoch=0):
+    def __init__(
+        self,
+        filepath,
+        model_log_filename,
+        logs=None,
+        save_frequency=1,
+        model_keras_filename=None,
+        start_epoch=0,
+    ):
         """
         Initialize the StopOnNanLoss callback.
 
@@ -159,7 +172,9 @@ class StopOnNanLoss(Callback):
             self.logs = update_history_dict(logs, self.logs)
             epoc_save = epoch + 1 + self.start_epoch
             if (epoc_save) % self.save_frequency == 0:
-                model_save_name = self.model_keras_filename.format(epoch=epoc_save)
+                model_save_name = self.model_keras_filename.format(
+                    epoch=epoc_save
+                )
                 # Save the model
                 self.model.save(model_save_name)
 
@@ -185,17 +200,21 @@ class StopOnNanLoss(Callback):
             if self.last_good_model is not None:
                 self.model.set_weights(self.last_good_model)
             if self.last_good_epoch is not None:
-                frq_model_filename = self.filepath.replace(".keras", f"freq_saves/{self.last_good_epoch}.keras")
+                frq_model_filename = self.filepath.replace(
+                    ".keras", f"freq_saves/{self.last_good_epoch}.keras"
+                )
                 os.makedirs(os.path.dirname(frq_model_filename), exist_ok=True)
                 self.model.save(frq_model_filename)
                 with open(self.model_log_filename, "w") as f:
                     json.dump(self.logs, f)
-            self.model.save(self.filepath.replace(".keras", "freq_saves/unfinished.keras"))
+            self.model.save(
+                self.filepath.replace(".keras", "freq_saves/unfinished.keras")
+            )
             self.model.stop_training = True
         else:
             self.last_good_model = self.model.get_weights()
-            unfinished = self.filepath.replace(".keras", "freq_saves/unfinished.keras")
+            unfinished = self.filepath.replace(
+                ".keras", "freq_saves/unfinished.keras"
+            )
             if os.path.exists(unfinished):
                 os.remove(unfinished)
-
-

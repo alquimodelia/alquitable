@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "alquitable"
-version = "0.0.1"
+version = "0.0.2"
 description = "Keras-core based tools to enhance Alquimodelia"
 authors = ["João Santos <jotaflame@gmail.com>"]
 readme = "README.md"
