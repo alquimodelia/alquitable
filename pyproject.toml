@@ -51,6 +51,7 @@ optional = true
 
 [tool.poetry.group.tests.dependencies]
 pytest = "*"
+forecat = "*"
 
 
 [build-system]

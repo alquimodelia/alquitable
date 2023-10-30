@@ -610,6 +610,27 @@ testing = ["covdefaults (>=2.3)", "coverage (>=7.3.2)", "diff-cover (>=8)", "pyt
 typing = ["typing-extensions (>=4.8)"]
 
 [[package]]
+name = "forecat"
+version = "0.0.2"
+description = "Keras based Forescast model builder"
+optional = false
+python-versions = ">=3.9,<4.0"
+files = [
+    {file = "forecat-0.0.2-py3-none-any.whl", hash = "sha256:adb1d325e9af7f26e0e4c3a481ae84b38a2315b85e50981cb5bd39eb79246c9a"},
+    {file = "forecat-0.0.2.tar.gz", hash = "sha256:2012585e66b6057b1b678a812baa6ef694e485d0ec460a49dbe4ceb7cc2998ed"},
+]
+
+[package.dependencies]
+keras-core = "*"
+numpy = "*"
+pandas = "*"
+
+[package.extras]
+jax = ["jax"]
+tensorflow = ["tensorflow"]
+torch = ["pytorch"]
+
+[[package]]
 name = "gast"
 version = "0.2.2"
 description = "Python AST that abstracts the underlying Python version"
@@ -2805,4 +2826,4 @@ torch = ["pytorch"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "6761253f43188647a619078266eed5b5b0319326771e59df667c44932549182b"
+content-hash = "9a289acd7b7c0e5911c03e7cd9464f3af9bd7a70ad92371662afb56980547349"
