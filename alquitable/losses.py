@@ -5,11 +5,21 @@ from keras_core import Loss, ops
 
 
 class MeanSquaredDiffError(Loss):
+    def __init__(
+        self, name="mean_squared_diff_error", **kwargs
+    ):
+        super().__init__(name=name,**kwargs)
+
     def call(self, y_true, y_pred):
         return ops.mean(ops.abs(ops.square(y_pred) - ops.square(y_true)))
 
 
 class MeanSquaredDiffLogError(Loss):
+    def __init__(
+        self, name="mean_squared_diff_log_error", **kwargs
+    ):
+        super().__init__(name=name,**kwargs)
+
     def call(self, y_true, y_pred):
         return ops.mean(
             ops.abs(
@@ -20,6 +30,11 @@ class MeanSquaredDiffLogError(Loss):
 
 
 class MeanCubicError(Loss):
+    def __init__(
+        self, name="mean_cubic_error", **kwargs
+    ):
+        super().__init__(name=name,**kwargs)
+        
     def call(self, y_true, y_pred):
         erro = y_pred - y_true
         ce = ops.multiply(ops.square(erro), ops.abs(erro))

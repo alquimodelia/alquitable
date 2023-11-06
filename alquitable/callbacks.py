@@ -207,14 +207,14 @@ class StopOnNanLoss(Callback):
                 self.model.save(frq_model_filename)
                 with open(self.model_log_filename, "w") as f:
                     json.dump(self.logs, f)
-            self.model.save(
-                self.filepath.replace(".keras", "freq_saves/unfinished.keras")
-            )
+            # self.model.save(
+            #     self.filepath.replace(".keras", "freq_saves/unfinished.keras")
+            # )
             self.model.stop_training = True
         else:
             self.last_good_model = self.model.get_weights()
-            unfinished = self.filepath.replace(
-                ".keras", "freq_saves/unfinished.keras"
-            )
-            if os.path.exists(unfinished):
-                os.remove(unfinished)
+            # unfinished = self.filepath.replace(
+            #     ".keras", "freq_saves/unfinished.keras"
+            # )
+            # if os.path.exists(unfinished):
+            #     os.remove(unfinished)
