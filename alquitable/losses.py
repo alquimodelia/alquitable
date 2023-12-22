@@ -41,27 +41,20 @@ class MeanPercentualDiffError(Loss):
 
     def call(self, y_true, y_pred):
         erro = y_pred - y_true
-        erro_m = ops.abs(erro[erro<=0])
-        erro_s = ops.abs(erro[erro>=0])
+        m_mask = erro<=0
+        s_mask = erro>=0
 
-        denominator_m = ops.sum(erro_m)
-        denominator_s = ops.sum(erro_s)
+        erro_m = ops.abs(erro[m_mask])
+        erro_s = ops.abs(erro[s_mask])
+        true_m = y_true[m_mask]
+        true_s = y_true[s_mask]
 
-        em = ops.mean(erro_m)
-        es = ops.mean(erro_s)
-
-        if denominator_m==0:
-            epm=0
-        else:
-            epm = ops.divide(em, denominator_m)*100
-
-        if denominator_s==0:
-            eps=0
-        else:
-            eps = ops.divide(es, denominator_s)*100
+        erro_perc_m = ops.mean(ops.divide(erro_m, true_m))*100
+        erro_perc_s = ops.mean(ops.divide(erro_s, true_s))*100
 
 
-        res = ops.mean([epm, eps])
+
+        res = ops.mean([erro_perc_m, erro_perc_s])
 
         return res
 
@@ -71,27 +64,20 @@ class MeanPercentualDiffNoZeroError(Loss):
 
     def call(self, y_true, y_pred):
         erro = y_pred - y_true
-        erro_m = ops.abs(erro[erro<0])
-        erro_s = ops.abs(erro[erro>0])
+        m_mask = erro<0
+        s_mask = erro>0
 
-        denominator_m = ops.sum(erro_m)
-        denominator_s = ops.sum(erro_s)
+        erro_m = ops.abs(erro[m_mask])
+        erro_s = ops.abs(erro[s_mask])
+        true_m = y_true[m_mask]
+        true_s = y_true[s_mask]
 
-        em = ops.mean(erro_m)
-        es = ops.mean(erro_s)
-
-        if denominator_m==0:
-            epm=0
-        else:
-            epm = ops.divide(em, denominator_m)*100
-            
-        if denominator_s==0:
-            eps=0
-        else:
-            eps = ops.divide(es, denominator_s)*100
+        erro_perc_m = ops.mean(ops.divide(erro_m, true_m))*100
+        erro_perc_s = ops.mean(ops.divide(erro_s, true_s))*100
 
 
-        res = ops.mean([epm, eps])
+
+        res = ops.mean([erro_perc_m, erro_perc_s])
 
         return res
 module = inspect.currentframe().f_globals["__name__"]
