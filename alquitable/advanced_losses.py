@@ -1,5 +1,5 @@
 import keras_core
-from keras_core import ops
+from keras_core import Loss, ops
 
 
 def mirror_weights(ratio=None, loss_to_use=None, weight_on_surplus=True):
@@ -78,3 +78,34 @@ def mirror_weights(ratio=None, loss_to_use=None, weight_on_surplus=True):
         return loss_to_use(y_true, y_pred, sample_weight=weights)
 
     return loss
+
+
+
+class MirrorWeights(Loss):
+    def __init__(self, ratio=None, loss_to_use=None, weight_on_surplus=True, name="mirror_weights",**kwargs):
+        if loss_to_use is None:
+            loss_to_use = keras_core.losses.MeanSquaredError()
+        self.loss_to_use=loss_to_use
+        self.ratio = ratio
+        self.weight_on_surplus = weight_on_surplus
+        name = f"{name}_{loss_to_use.name}"
+        super().__init__(name=name, **kwargs)
+
+    def call(self, y_true, y_pred):
+        diff = y_pred - y_true
+        greater = ops.greater(diff, 0)
+        greater = ops.cast(greater, keras_core.backend.floatx())
+        greater = greater + 1
+
+        surplus_values = 1 if self.ratio is None else self.ratio
+        missing_values = 1 if self.ratio is None else self.ratio
+
+        if self.ratio is None:
+            if self.weight_on_surplus:
+                surplus_values = ops.maximum(0.0, -diff)
+            else:
+                missing_values = ops.maximum(0.0, diff)
+
+        weights = ops.where(greater == 1, surplus_values, missing_values)
+
+        return self.loss_to_use(y_true, y_pred, sample_weight=weights)

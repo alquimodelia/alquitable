@@ -35,7 +35,65 @@ class MeanCubicError(Loss):
         mce = ops.mean(ce)
         return mce
 
+class MeanPercentualDiffError(Loss):
+    def __init__(self, name="mean_percentual_diff_error", **kwargs):
+        super().__init__(name=name, **kwargs)
 
+    def call(self, y_true, y_pred):
+        erro = y_pred - y_true
+        erro_m = ops.abs(erro[erro<=0])
+        erro_s = ops.abs(erro[erro>=0])
+
+        denominator_m = ops.sum(erro_m)
+        denominator_s = ops.sum(erro_s)
+
+        em = ops.mean(erro_m)
+        es = ops.mean(erro_s)
+
+        if denominator_m==0:
+            epm=0
+        else:
+            epm = ops.divide(em, denominator_m)*100
+
+        if denominator_s==0:
+            eps=0
+        else:
+            eps = ops.divide(es, denominator_s)*100
+
+
+        res = ops.mean([epm, eps])
+
+        return res
+
+class MeanPercentualDiffNoZeroError(Loss):
+    def __init__(self, name="mean_percentual_diff_no_zero_error", **kwargs):
+        super().__init__(name=name, **kwargs)
+
+    def call(self, y_true, y_pred):
+        erro = y_pred - y_true
+        erro_m = ops.abs(erro[erro<0])
+        erro_s = ops.abs(erro[erro>0])
+
+        denominator_m = ops.sum(erro_m)
+        denominator_s = ops.sum(erro_s)
+
+        em = ops.mean(erro_m)
+        es = ops.mean(erro_s)
+
+        if denominator_m==0:
+            epm=0
+        else:
+            epm = ops.divide(em, denominator_m)*100
+            
+        if denominator_s==0:
+            eps=0
+        else:
+            eps = ops.divide(es, denominator_s)*100
+
+
+        res = ops.mean([epm, eps])
+
+        return res
 module = inspect.currentframe().f_globals["__name__"]
 
 
@@ -47,3 +105,4 @@ def is_loss_subclass(cls):
 # Get all the Loss subclasses defined in the module
 loss_functions = inspect.getmembers(sys.modules[module], is_loss_subclass)
 loss_functions = [(n, f) for n, f in loss_functions if n != "Loss"]
+ALL_LOSSES_DICT = {n:f for n, f in loss_functions if n != "Loss"}

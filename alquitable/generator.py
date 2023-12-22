@@ -1,19 +1,20 @@
 import math
 
-import keras_core as keras
+import keras_core
 import numpy as np
 import pandas as pd
 
 # Create a generator for the timeseries with a moving window.
 
 
-class DataGenerator(keras.utils.Sequence):
+class DataGenerator(keras_core.utils.Sequence):
     def __init__(
         self,
         dataset: pd.DataFrame,
-        time_moving_window_size_X=7 * 24,  # batch size 7 days, 168 hours,
-        time_moving_window_size_Y=1
-        * 24,  # to predict the after 1 day, 24 hours,
+        # batch size 7 days, 168 hours,
+        time_moving_window_size_X=7 * 24,
+        # to predict the after 1 day, 24 hours,
+        time_moving_window_size_Y=1* 24,
         y_columns=None,
         keep_y_on_x=True,
         drop_cols="datetime",
@@ -96,7 +97,6 @@ class DataGenerator(keras.utils.Sequence):
         Y = self.y[limit_point : limit_point + self.y_batch]
 
         return X, Y
-
 
 def get_dataset(
     dataset,
