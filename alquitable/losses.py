@@ -49,8 +49,9 @@ class MeanPercentualDiffError(Loss):
         true_m = y_true[m_mask]
         true_s = y_true[s_mask]
 
-        erro_perc_m = ops.mean(ops.divide(erro_m, true_m))*100
-        erro_perc_s = ops.mean(ops.divide(erro_s, true_s))*100
+        # Check for zeros before division
+        erro_perc_m = ops.where(ops.not_equal(true_m, 0), ops.divide(erro_m, true_m), 0)*100
+        erro_perc_s = ops.where(ops.not_equal(true_s, 0), ops.divide(erro_s, true_s), 0)*100
 
 
 
@@ -72,8 +73,9 @@ class MeanPercentualDiffNoZeroError(Loss):
         true_m = y_true[m_mask]
         true_s = y_true[s_mask]
 
-        erro_perc_m = ops.mean(ops.divide(erro_m, true_m))*100
-        erro_perc_s = ops.mean(ops.divide(erro_s, true_s))*100
+        # Check for zeros before division
+        erro_perc_m = ops.where(ops.not_equal(true_m, 0), ops.divide(erro_m, true_m), 0)*100
+        erro_perc_s = ops.where(ops.not_equal(true_s, 0), ops.divide(erro_s, true_s), 0)*100
 
 
 
