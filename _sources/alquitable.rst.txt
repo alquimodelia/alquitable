@@ -20,6 +20,14 @@ alquitable.callbacks module
    :undoc-members:
    :show-inheritance:
 
+alquitable.generator module
+---------------------------
+
+.. automodule:: alquitable.generator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 alquitable.losses module
 ------------------------
 
