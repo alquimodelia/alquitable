@@ -109,3 +109,157 @@ class MirrorWeights(Loss):
         weights = ops.where(greater == 1, surplus_values, missing_values)
 
         return self.loss_to_use(y_true, y_pred, sample_weight=weights)
+
+
+class MirrorLoss(Loss):
+    # Cuts of the diference in sampling number around the surplus and missing error
+    def __init__(self, ratio=None, loss_to_use=None, weight_on_surplus=True, name="mirror_loss",**kwargs):
+        if loss_to_use is None:
+            loss_to_use = keras_core.losses.MeanSquaredError()
+        self.loss_to_use=loss_to_use
+        self.ratio = ratio
+        self.weight_on_surplus = weight_on_surplus
+        name = f"{name}_{loss_to_use.name}"
+        super().__init__(name=name, **kwargs)
+
+    def call(self, y_true, y_pred):
+        erro = y_pred - y_true
+        m_mask = erro<0
+        s_mask = erro>=0
+
+        true_m = y_true[m_mask]
+        true_s = y_true[s_mask]
+        pred_m = y_pred[m_mask]
+        pred_s = y_pred[s_mask]
+
+
+        m_loss = self.loss_to_use(true_m, pred_m)
+        s_loss = self.loss_to_use(true_s, pred_s)
+
+
+        return ops.mean([m_loss, s_loss])
+
+
+
+class MirrorPercentage(Loss):
+    # Only works properly for losses where the return is the same dimension as predict: rmse, mae
+    def __init__(self, ratio=None, loss_to_use=None, weight_on_surplus=True, name="mirror_percentage",
+    funtion_to_dimention=None,
+    
+    **kwargs):
+        if loss_to_use is None:
+            loss_to_use = keras_core.losses.MeanSquaredError()
+        self.loss_to_use=loss_to_use
+        self.ratio = ratio
+        self.weight_on_surplus = weight_on_surplus
+        self.funtion_to_dimention = funtion_to_dimention
+
+        name = f"{name}_{loss_to_use.name}"
+        if funtion_to_dimention is None:
+            if isinstance(self.loss_to_use, keras_core.losses.MeanSquaredError):
+                self.funtion_to_dimention = ops.sqrt
+        super().__init__(name=name, **kwargs)
+
+    def _calculate_loss(self, true_values, pred_values, prefix, overal_avg_true=None):
+        loss = self.loss_to_use(true_values, pred_values)
+
+        # if overal_avg_pred:
+        #     # Compute the averages of the predicted values
+        #     avg_pred_values=overal_avg_pred
+        # else:
+
+        if self.funtion_to_dimention:
+            loss = self.funtion_to_dimention(loss)
+
+        epsilon = 1e-8
+
+        # Normalize the losses
+        norm_loss = ops.abs((loss + epsilon) / (overal_avg_true + epsilon))*100
+
+        return norm_loss
+
+    def call(self, y_true, y_pred):
+        erro = y_pred - y_true
+        # overal_avg_pred = ops.mean(y_pred)
+        overal_avg_true = ops.mean(y_true)
+
+        m_mask = erro<0
+        s_mask = erro>=0
+        # z_mask = erro == 0
+
+
+        true_m = y_true[m_mask]
+        true_s = y_true[s_mask]
+        pred_m = y_pred[m_mask]
+        pred_s = y_pred[s_mask]
+        
+        # true_z = y_true[z_mask] # True values for erro == 0
+        # pred_z = y_pred[z_mask] # Predicted values for erro == 0
+        
+        # Calculate the loss for m_mask, s_mask, and z_mask
+        norm_m_loss = self._calculate_loss(true_m, pred_m, "m",overal_avg_true=overal_avg_true) if ops.size(pred_m) else ops.convert_to_tensor(0)
+        norm_s_loss = self._calculate_loss(true_s, pred_s, "s",overal_avg_true=overal_avg_true) if ops.size(pred_s) else ops.convert_to_tensor(0)
+        # norm_z_loss = self._calculate_loss(true_z, pred_z, 'z', overal_avg_pred=overal_avg_pred) if ops.size(pred_z) else ops.convert_to_tensor(0) # New loss calculation for erro == 0
+
+        return ops.mean([norm_m_loss, norm_s_loss])
+
+
+
+
+class MirrorNormalized(Loss):
+    # Only works properly for losses where the return is the same dimension as predict: rmse, mae
+    def __init__(self, ratio=None, loss_to_use=None, weight_on_surplus=True, name="mirror_normalized",
+    funtion_to_dimention=None,
+    
+    **kwargs):
+        if loss_to_use is None:
+            loss_to_use = keras_core.losses.MeanSquaredError()
+        self.loss_to_use=loss_to_use
+        self.ratio = ratio
+        self.weight_on_surplus = weight_on_surplus
+        self.funtion_to_dimention = funtion_to_dimention
+
+        name = f"{name}_{loss_to_use.name}"
+        if funtion_to_dimention is None:
+            if isinstance(self.loss_to_use, keras_core.losses.MeanSquaredError):
+                self.funtion_to_dimention = ops.sqrt
+        super().__init__(name=name, **kwargs)
+
+ 
+
+    def call(self, y_true, y_pred):
+        erro = y_pred - y_true
+        # overal_avg_pred = ops.mean(y_pred)
+        ops.mean(y_true)
+
+        m_mask = erro<0
+        s_mask = erro>=0
+        # z_mask = erro == 0
+
+
+        true_m = y_true[m_mask]
+        true_s = y_true[s_mask]
+        pred_m = y_pred[m_mask]
+        pred_s = y_pred[s_mask]
+        
+        # Compute the means and variances of true and predicted values for both positive and negative errors
+        m_mean, m_var = ops.mean(ops.concatenate([true_m,pred_m])), ops.var(ops.concatenate([true_m,pred_m]))
+        s_mean, s_var = ops.mean(ops.concatenate([true_s,pred_s])), ops.var(ops.concatenate([true_s,pred_s]))
+        # Add a small constant to avoid division by zero
+
+        m_var += 1e-10
+        s_var += 1e-10
+
+        # Normalize the true and predicted values
+        true_m_normalized = (((true_m - m_mean) / ops.sqrt(m_var))+1)*100
+        true_s_normalized = (((true_s - s_mean) / ops.sqrt(s_var))+1)*100
+        pred_m_normalized = (((pred_m - m_mean) / ops.sqrt(m_var))+1)*100
+        pred_s_normalized = (((pred_s - s_mean) / ops.sqrt(s_var))+1)*100
+
+        # Compute the loss on the normalized values
+        m_loss = self.loss_to_use(true_m_normalized, pred_m_normalized)
+        s_loss = self.loss_to_use(true_s_normalized, pred_s_normalized)
+
+
+
+        return ops.mean([m_loss, s_loss])
