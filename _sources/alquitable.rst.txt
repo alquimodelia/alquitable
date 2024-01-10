@@ -28,6 +28,14 @@ alquitable.generator module
    :undoc-members:
    :show-inheritance:
 
+alquitable.layers module
+------------------------
+
+.. automodule:: alquitable.layers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 alquitable.losses module
 ------------------------
 
