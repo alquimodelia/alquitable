@@ -3,18 +3,18 @@ from keras import ops
 
 
 class Time2Vec(keras.Layer):
-    def __init__(self, kernel_size=1, feature_dimension=1, trainable=True,name='Time2VecLayer', **kwargs):
+    def __init__(self, kernel_size=1, feature_dimension=1, trainable=True,name="Time2VecLayer", **kwargs):
         super().__init__(trainable=trainable, name=name,**kwargs)
         self.k = 8#kernel_size
         self.feature_dimension = feature_dimension
     
     def build(self, input_shape):
         # trend
-        self.wb = self.add_weight(name='wb',shape=(input_shape[self.feature_dimension],),initializer='uniform',trainable=True)
-        self.bb = self.add_weight(name='bb',shape=(input_shape[self.feature_dimension],),initializer='uniform',trainable=True)
+        self.wb = self.add_weight(name="wb",shape=(input_shape[self.feature_dimension],),initializer="uniform",trainable=True)
+        self.bb = self.add_weight(name="bb",shape=(input_shape[self.feature_dimension],),initializer="uniform",trainable=True)
         # periodic
-        self.wa = self.add_weight(name='wa',shape=(1, input_shape[self.feature_dimension], self.k),initializer='uniform',trainable=True)
-        self.ba = self.add_weight(name='ba',shape=(1, input_shape[self.feature_dimension], self.k),initializer='uniform',trainable=True)
+        self.wa = self.add_weight(name="wa",shape=(1, input_shape[self.feature_dimension], self.k),initializer="uniform",trainable=True)
+        self.ba = self.add_weight(name="ba",shape=(1, input_shape[self.feature_dimension], self.k),initializer="uniform",trainable=True)
         super().build(input_shape)
 
     def call(self, inputs, **kwargs):
@@ -23,7 +23,7 @@ class Time2Vec(keras.Layer):
         # dp = ops.dot(inputs, self.wa) + self.ba
         # t
 
-        dpie = ops.expand_dims(ops.einsum('...j,...jk->...k', inputs, self.wa),1)
+        dpie = ops.expand_dims(ops.einsum("...j,...jk->...k", inputs, self.wa),1)
         dp = dpie + self.ba
         # print("epx dp", dp.shape)
         # print("dpi", dpi.shape)

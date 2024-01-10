@@ -172,7 +172,7 @@ class GENEO_Keras_Loss(Loss):
         if len(cvx_coeffs) == 0:
             return 0
 
-        last_phi = [phi_name for phi_name in cvx_coeffs if not cvx_coeffs[phi_name].requires_grad][0]
+        [phi_name for phi_name in cvx_coeffs if not cvx_coeffs[phi_name].requires_grad][0]
 
         return self.rho * (ops.sum([ops.relu(-phi) for phi in cvx_coeffs])
                             + ops.relu(-(1 - ops.sum(cvx_coeffs) + cvx_coeffs[-1])))

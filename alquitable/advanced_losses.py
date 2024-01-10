@@ -1,6 +1,8 @@
 import keras
 from keras import Loss, ops
+
 from alquitable.losses import SumSquaredError
+
 
 def mirror_weights(ratio=None, loss_to_use=None, weight_on_surplus=True):
     """
