@@ -1,13 +1,13 @@
 import math
 
-import keras_core
+import keras
 import numpy as np
 import pandas as pd
 
 # Create a generator for the timeseries with a moving window.
 
 
-class DataGenerator(keras_core.utils.Sequence):
+class DataGenerator(keras.utils.Sequence):
     def __init__(
         self,
         dataset: pd.DataFrame,

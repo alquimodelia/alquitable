@@ -1,8 +1,8 @@
 import inspect
 import sys
 
-import keras_core
-from keras_core import Loss, ops
+import keras
+from keras import Loss, ops
 
 
 class MeanSquaredDiffError(Loss):
@@ -36,11 +36,20 @@ class MeanCubicError(Loss):
         mce = ops.mean(ce)
         return mce
 
+class SumSquaredError(Loss):
+    def __init__(self, name="sum_squared_error", **kwargs):
+        super().__init__(name=name, **kwargs)
+
+    def call(self, y_true, y_pred):
+        erro = y_pred - y_true
+        se = ops.square(erro)
+        sse = ops.sum(se)
+        return sse
 
 class PercentageMeanError(Loss):
     def __init__(self, name="percentage_mean_error",absolute=True, epsilon=None,**kwargs):
         self.absolute=absolute
-        self.epsilon= epsilon or ops.convert_to_tensor(keras_core.backend.epsilon())
+        self.epsilon= epsilon or ops.convert_to_tensor(keras.backend.epsilon())
 
         super().__init__(name=name, **kwargs)
 
@@ -56,7 +65,7 @@ class PercentageMeanError(Loss):
 class MeanPercentageError(Loss):
     def __init__(self, name="mean_percentage_error",absolute=True, epsilon=None,**kwargs):
         self.absolute=absolute
-        self.epsilon= epsilon or ops.convert_to_tensor(keras_core.backend.epsilon())
+        self.epsilon= epsilon or ops.convert_to_tensor(keras.backend.epsilon())
 
         super().__init__(name=name, **kwargs)
 
@@ -72,7 +81,7 @@ class MeanPercentageError(Loss):
 
 class MeanPercentualDiffError(Loss):
     def __init__(self, name="mean_percentual_diff_error", epsilon=None,**kwargs):
-        self.epsilon= epsilon or ops.convert_to_tensor(keras_core.backend.epsilon())
+        self.epsilon= epsilon or ops.convert_to_tensor(keras.backend.epsilon())
 
         super().__init__(name=name, **kwargs)
 
@@ -110,7 +119,7 @@ class MeanPercentualDiffError(Loss):
 
 class MeanPercentualDiffNoZeroError(Loss):
     def __init__(self, name="mean_percentual_diff_no_zero_error", epsilon=None,**kwargs):
-        self.epsilon= epsilon or ops.convert_to_tensor(keras_core.backend.epsilon())
+        self.epsilon= epsilon or ops.convert_to_tensor(keras.backend.epsilon())
 
         super().__init__(name=name, **kwargs)
 
@@ -137,6 +146,50 @@ class MeanPercentualDiffNoZeroError(Loss):
 
 
         return ops.mean([erro_per_m, erro_per_s])
+
+
+
+class GENEO_Keras_Loss(Loss):
+    def __init__(self, name="geneo_loss",loss_to_use=None, alpha=1, rho=3, epsilon=0.1, gamma=1,**kwargs):
+        if loss_to_use is None:
+            loss_to_use = keras.losses.MeanSquaredError()
+        self.loss_to_use=loss_to_use
+        self.alpha = alpha
+        self.rho = rho
+        self.epsilon = epsilon
+        self.gamma = gamma
+
+        super().__init__(name=name, **kwargs)
+
+
+    def cvx_loss(self, cvx_coeffs):
+        """
+        Penalizes non-positive convex parameters;
+        The last cvx coefficient is calculated in function of the previous ones: phi_n = 1 - sum_i^N-1(phi_i)
+
+        This results from the the relaxation of the cvx restriction: sum(cvx_coeffs) == 1
+        """
+        if len(cvx_coeffs) == 0:
+            return 0
+
+        last_phi = [phi_name for phi_name in cvx_coeffs if not cvx_coeffs[phi_name].requires_grad][0]
+
+        return self.rho * (ops.sum([ops.relu(-phi) for phi in cvx_coeffs])
+                            + ops.relu(-(1 - ops.sum(cvx_coeffs) + cvx_coeffs[-1])))
+
+    def positive_regularizer(self, params):
+        """
+        Penalizes non positive parameters
+        """
+        if len(params) == 0:
+            return 0
+        return self.rho * ops.sum([ops.relu(-g) for g in params])
+
+    def call(self, y_true, y_pred, cvx_coeffs, geneo_params):
+        dense_criterion = self.loss(y_true, y_pred)
+        cvx_penalty = self.cvx_loss(cvx_coeffs)
+        non_positive_penalty = self.positive_regularizer(geneo_params)
+        return dense_criterion + cvx_penalty + non_positive_penalty
 
 
 

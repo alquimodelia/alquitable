@@ -16,7 +16,7 @@ keywords = ["python", "machine learning", "modeling", "keras"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-keras-core = "*"
+keras = ">=3"
 pandas = "*"
 numpy = "*"
 

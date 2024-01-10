@@ -2,7 +2,7 @@ import json
 import math
 import os
 
-from keras_core.callbacks import Callback
+from keras.callbacks import Callback
 
 
 def update_history_dict(new_log, old_log):
