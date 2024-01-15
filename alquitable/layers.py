@@ -1,5 +1,67 @@
 import keras
 from keras import ops
+from keras.layers import Dense, Embedding
+
+
+class Patches(keras.Layer):
+    def __init__(self, patch_size):
+        super().__init__()
+        self.patch_size = patch_size
+
+    def call(self, images):
+        input_shape = ops.shape(images)
+        batch_size = input_shape[0]
+        height = input_shape[1]
+        width = input_shape[2]
+        channels = input_shape[3]
+        num_patches_h = height // self.patch_size
+        num_patches_w = width // self.patch_size
+        patches = ops.image.extract_patches(images, size=self.patch_size)
+        patches = ops.reshape(
+            patches,
+            (
+                batch_size,
+                num_patches_h * num_patches_w,
+                self.patch_size * self.patch_size * channels,
+            ),
+        )
+        return patches
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({"patch_size": self.patch_size})
+        return config
+
+
+class PatchEncoder(keras.Layer):
+    def __init__(self, num_patches, projection_dim):
+        super().__init__()
+        self.num_patches = num_patches
+        self.projection_dim = projection_dim
+
+        self.projection = Dense(units=projection_dim)
+        self.position_embedding = Embedding(
+            input_dim=num_patches, output_dim=projection_dim
+        )
+
+    def build(self, input_shape):
+        self.projection.build(input_shape)
+        self.position_embedding.build(input_shape)
+
+    def call(self, patch):
+        positions = ops.expand_dims(
+            ops.arange(start=0, stop=self.num_patches, step=1), axis=0
+        )
+        projected_patches = Dense(units=self.projection_dim)(patch)
+        encoded = projected_patches + Embedding(
+            input_dim=self.num_patches, output_dim=self.projection_dim
+        )(positions)
+        return encoded
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({"num_patches": self.num_patches})
+        return config
 
 
 class Time2Vec(keras.Layer):
