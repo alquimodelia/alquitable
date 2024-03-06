@@ -149,6 +149,22 @@ class MeanPercentualDiffNoZeroError(Loss):
 
 
 
+class SlopeLoss(Loss):
+    def __init__(self, name="slope_loss", **kwargs):
+
+        super().__init__(name=name, **kwargs)
+
+    def call(self, y_true, y_pred):
+        
+        slope_truth = y_true.ravel()[-1]-y_true.ravel()[0]
+        slope_truth = slope_truth/len(y_true.ravel())
+        slope_pred = y_pred.ravel()[-1]-y_pred.ravel()[0]
+        slope_pred = slope_truth/len(y_pred.ravel())
+
+        erro_slope = slope_truth-slope_pred
+
+        return erro_slope
+
 class GENEO_Keras_Loss(Loss):
     def __init__(self, name="geneo_loss",loss_to_use=None, alpha=1, rho=3, epsilon=0.1, gamma=1,**kwargs):
         if loss_to_use is None:
