@@ -14,7 +14,7 @@ class DataGenerator(keras.utils.Sequence):
         # batch size 7 days, 168 hours,
         time_moving_window_size_X=7 * 24,
         # to predict the after 1 day, 24 hours,
-        time_moving_window_size_Y=1* 24,
+        time_moving_window_size_Y=1 * 24,
         y_columns=None,
         keep_y_on_x=True,
         drop_cols="datetime",
@@ -36,7 +36,7 @@ class DataGenerator(keras.utils.Sequence):
             y_columns = []
         self.train_features_folga = train_features_folga
         self.skiping_step = skiping_step
-        self.commun_timesteps=commun_timesteps
+        self.commun_timesteps = commun_timesteps
 
         # Make the y the 1st column
         dataset = dataset[
@@ -80,28 +80,29 @@ class DataGenerator(keras.utils.Sequence):
             ]
 
         self.x_batch = time_moving_window_size_X
-        self.y_batch = time_moving_window_size_Y + max(0,self.commun_timesteps)
+        self.y_batch = time_moving_window_size_Y + max(
+            0, self.commun_timesteps
+        )
 
         self.dataset_size = len(dataset)
 
     def __len__(self):
         y_alloc = self.y_batch
-        if self.commun_timesteps<0:
+        if self.commun_timesteps < 0:
             y_alloc = y_alloc + abs(self.commun_timesteps)
-        total_batches = (
-            self.dataset_size - sum([self.x_batch, y_alloc]) + 1
-        )
+        total_batches = self.dataset_size - sum([self.x_batch, y_alloc]) + 1
         return int(math.ceil(total_batches / self.skiping_step))
 
     def __getitem__(self, index):
         ind = index * self.skiping_step
 
-        limit_point = ind + self.x_batch 
-        y_limti_point = limit_point- self.commun_timesteps
+        limit_point = ind + self.x_batch
+        y_limti_point = limit_point - self.commun_timesteps
         X = self.x[ind:limit_point]
         Y = self.y[y_limti_point : y_limti_point + self.y_batch]
 
         return X, Y
+
 
 def get_dataset(
     dataset,

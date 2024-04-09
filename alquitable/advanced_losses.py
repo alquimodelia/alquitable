@@ -1,7 +1,7 @@
 import keras
 from keras import Loss, ops
 
-from alquitable.losses import SumSquaredError, SlopeLoss
+from alquitable.losses import SumSquaredError
 
 
 def mirror_weights(ratio=None, loss_to_use=None, weight_on_surplus=True):
@@ -82,14 +82,21 @@ def mirror_weights(ratio=None, loss_to_use=None, weight_on_surplus=True):
     return loss
 
 
-
 class MirrorWeights(Loss):
-    def __init__(self, ratio=None, ratio_m=None,ratio_s=None,loss_to_use=None, weight_on_surplus=True, name="mirror_weights",
-    ratio_on_weigths=False,
-    **kwargs):
+    def __init__(
+        self,
+        ratio=None,
+        ratio_m=None,
+        ratio_s=None,
+        loss_to_use=None,
+        weight_on_surplus=True,
+        name="mirror_weights",
+        ratio_on_weigths=False,
+        **kwargs,
+    ):
         if loss_to_use is None:
             loss_to_use = keras.losses.MeanSquaredError()
-        self.loss_to_use=loss_to_use
+        self.loss_to_use = loss_to_use
         self.ratio_on_weigths = ratio_on_weigths
         self.ratio = ratio
         self.ratio_m = ratio_m
@@ -107,20 +114,17 @@ class MirrorWeights(Loss):
         surplus_values = 1
         missing_values = 1
 
-
         if self.ratio:
             if not self.ratio_on_weigths:
-
-                if self.ratio>0:
+                if self.ratio > 0:
                     surplus_values = 1 if self.ratio is None else self.ratio
                 else:
                     missing_values = 1 if self.ratio is None else self.ratio
             else:
-                if self.ratio>0:
+                if self.ratio > 0:
                     surplus_values = ops.maximum(0.0, -diff) * abs(self.ratio)
                 else:
-                    missing_values = ops.maximum(0.0, diff)* abs(self.ratio)
-
+                    missing_values = ops.maximum(0.0, diff) * abs(self.ratio)
 
         if self.ratio is None:
             if self.weight_on_surplus:
@@ -129,9 +133,9 @@ class MirrorWeights(Loss):
                 missing_values = ops.maximum(0.0, diff)
 
         if self.ratio_m:
-            missing_values = missing_values*self.ratio_m
+            missing_values = missing_values * self.ratio_m
         if self.ratio_s:
-            surplus_values = surplus_values*self.ratio_s
+            surplus_values = surplus_values * self.ratio_s
 
         weights = ops.where(greater == 1, surplus_values, missing_values)
 
@@ -141,21 +145,30 @@ class MirrorWeights(Loss):
         base_config = super().get_config()
         return {
             **base_config,
-            'ratio': self.ratio,
-            'ratio_m': self.ratio_m,
-            'ratio_s': self.ratio_s,
-            'loss_to_use': self.loss_to_use,
-            'weight_on_surplus': self.weight_on_surplus,
-            "ratio_on_weigths":self.ratio_on_weigths,
-            "loss_to_use":self.loss_to_use,
+            "ratio": self.ratio,
+            "ratio_m": self.ratio_m,
+            "ratio_s": self.ratio_s,
+            "loss_to_use": self.loss_to_use,
+            "weight_on_surplus": self.weight_on_surplus,
+            "ratio_on_weigths": self.ratio_on_weigths,
         }
+
 
 class MirrorLoss(Loss):
     # Cuts of the diference in sampling number around the surplus and missing error
-    def __init__(self, ratio=None, ratio_m=None,ratio_s=None,loss_to_use=None, weight_on_surplus=True, name="mirror_loss",**kwargs):
+    def __init__(
+        self,
+        ratio=None,
+        ratio_m=None,
+        ratio_s=None,
+        loss_to_use=None,
+        weight_on_surplus=True,
+        name="mirror_loss",
+        **kwargs,
+    ):
         if loss_to_use is None:
             loss_to_use = keras.losses.MeanSquaredError()
-        self.loss_to_use=loss_to_use
+        self.loss_to_use = loss_to_use
         self.ratio = ratio
         self.ratio_m = ratio_m
         self.ratio_s = ratio_s
@@ -170,22 +183,20 @@ class MirrorLoss(Loss):
         m_ratio = self.ratio_m or 1
         s_ratio = self.ratio_s or 1
 
-        return ((m_loss * m_ratio)+(s_loss * s_ratio))/(m_ratio+s_ratio)
+        return ((m_loss * m_ratio) + (s_loss * s_ratio)) / (m_ratio + s_ratio)
 
     def call(self, y_true, y_pred):
         erro = y_pred - y_true
-        m_mask = erro<0
-        s_mask = erro>=0
+        m_mask = erro < 0
+        s_mask = erro >= 0
 
         true_m = y_true[m_mask]
         true_s = y_true[s_mask]
         pred_m = y_pred[m_mask]
         pred_s = y_pred[s_mask]
 
-
         m_loss = self.loss_to_use(true_m, pred_m)
         s_loss = self.loss_to_use(true_s, pred_s)
-
 
         return self._mean_losses(m_loss, s_loss)
 
@@ -193,20 +204,29 @@ class MirrorLoss(Loss):
         base_config = super().get_config()
         return {
             **base_config,
-            'ratio': self.ratio,
-            'ratio_m': self.ratio_m,
-            'ratio_s': self.ratio_s,
-            'loss_to_use': self.loss_to_use,
-            "ratio_on_weigths":self.ratio_on_weigths,
-            "loss_to_use":self.loss_to_use,
+            "ratio": self.ratio,
+            "ratio_m": self.ratio_m,
+            "ratio_s": self.ratio_s,
+            "loss_to_use": self.loss_to_use,
+            "ratio_on_weigths": self.ratio_on_weigths,
         }
+
 
 class MirrorLossNorm(Loss):
     # Cuts of the diference in sampling number around the surplus and missing error
-    def __init__(self, ratio=None, ratio_m=None,ratio_s=None,loss_to_use=None, weight_on_surplus=True, name="mirror_loss_norm",**kwargs):
+    def __init__(
+        self,
+        ratio=None,
+        ratio_m=None,
+        ratio_s=None,
+        loss_to_use=None,
+        weight_on_surplus=True,
+        name="mirror_loss_norm",
+        **kwargs,
+    ):
         if loss_to_use is None:
             loss_to_use = SumSquaredError()
-        self.loss_to_use=loss_to_use
+        self.loss_to_use = loss_to_use
         self.ratio = ratio
         self.ratio_m = ratio_m
         self.ratio_s = ratio_s
@@ -221,26 +241,24 @@ class MirrorLossNorm(Loss):
         m_ratio = self.ratio_m or 1
         s_ratio = self.ratio_s or 1
 
-        return ((m_loss * m_ratio)+(s_loss * s_ratio))/(m_ratio+s_ratio)
+        return ((m_loss * m_ratio) + (s_loss * s_ratio)) / (m_ratio + s_ratio)
 
     def call(self, y_true, y_pred):
         erro = y_pred - y_true
-        m_mask = erro<0
-        s_mask = erro>=0
+        m_mask = erro < 0
+        s_mask = erro >= 0
 
         true_m = y_true[m_mask]
         true_s = y_true[s_mask]
         pred_m = y_pred[m_mask]
         pred_s = y_pred[s_mask]
 
-
         m_loss = self.loss_to_use(true_m, pred_m)
-        m_loss = (m_loss/(4824.70**2))*100
+        m_loss = (m_loss / (4824.70**2)) * 100
 
         s_loss = self.loss_to_use(true_s, pred_s)
 
-        s_loss = (s_loss/(18903.6**2))*100
-
+        s_loss = (s_loss / (18903.6**2)) * 100
 
         return self._mean_losses(m_loss, s_loss)
 
@@ -248,21 +266,29 @@ class MirrorLossNorm(Loss):
         base_config = super().get_config()
         return {
             **base_config,
-            'ratio': self.ratio,
-            'ratio_m': self.ratio_m,
-            'ratio_s': self.ratio_s,
-            'loss_to_use': self.loss_to_use,
-            "ratio_on_weigths":self.ratio_on_weigths,
-            "loss_to_use":self.loss_to_use,
+            "ratio": self.ratio,
+            "ratio_m": self.ratio_m,
+            "ratio_s": self.ratio_s,
+            "loss_to_use": self.loss_to_use,
+            "ratio_on_weigths": self.ratio_on_weigths,
         }
 
 
 class MirrorLossNormMinMax(Loss):
     # Cuts of the diference in sampling number around the surplus and missing error
-    def __init__(self, ratio=None, ratio_m=None,ratio_s=None,loss_to_use=None, weight_on_surplus=True, name="mirror_loss_norm_min_max",**kwargs):
+    def __init__(
+        self,
+        ratio=None,
+        ratio_m=None,
+        ratio_s=None,
+        loss_to_use=None,
+        weight_on_surplus=True,
+        name="mirror_loss_norm_min_max",
+        **kwargs,
+    ):
         if loss_to_use is None:
             loss_to_use = SumSquaredError()
-        self.loss_to_use=loss_to_use
+        self.loss_to_use = loss_to_use
         self.ratio = ratio
         self.ratio_m = ratio_m
         self.ratio_s = ratio_s
@@ -277,12 +303,12 @@ class MirrorLossNormMinMax(Loss):
         m_ratio = self.ratio_m or 1
         s_ratio = self.ratio_s or 1
 
-        return ((m_loss * m_ratio)+(s_loss * s_ratio))/(m_ratio+s_ratio)
+        return ((m_loss * m_ratio) + (s_loss * s_ratio)) / (m_ratio + s_ratio)
 
     def call(self, y_true, y_pred):
         erro = y_pred - y_true
-        m_mask = erro<0
-        s_mask = erro>=0
+        m_mask = erro < 0
+        s_mask = erro >= 0
 
         true_m = y_true[m_mask]
         true_s = y_true[s_mask]
@@ -296,10 +322,9 @@ class MirrorLossNormMinMax(Loss):
         s_feat_min = 3118.29**2
 
         m_loss = self.loss_to_use(true_m, pred_m)
-        m_loss = ((m_loss-m_feat_min)/(m_feat_max-m_feat_min))*100
+        m_loss = ((m_loss - m_feat_min) / (m_feat_max - m_feat_min)) * 100
         s_loss = self.loss_to_use(true_s, pred_s)
-        s_loss = ((s_loss-s_feat_min)/(s_feat_max-s_feat_min))*100
-
+        s_loss = ((s_loss - s_feat_min) / (s_feat_max - s_feat_min)) * 100
 
         return self._mean_losses(m_loss, s_loss)
 
@@ -307,23 +332,28 @@ class MirrorLossNormMinMax(Loss):
         base_config = super().get_config()
         return {
             **base_config,
-            'ratio': self.ratio,
-            'ratio_m': self.ratio_m,
-            'ratio_s': self.ratio_s,
-            'loss_to_use': self.loss_to_use,
-            "ratio_on_weigths":self.ratio_on_weigths,
-            "loss_to_use":self.loss_to_use,
+            "ratio": self.ratio,
+            "ratio_m": self.ratio_m,
+            "ratio_s": self.ratio_s,
+            "loss_to_use": self.loss_to_use,
+            "ratio_on_weigths": self.ratio_on_weigths,
         }
+
 
 class MirrorPercentage(Loss):
     # Only works properly for losses where the return is the same dimension as predict: rmse, mae
-    def __init__(self, ratio=None, loss_to_use=None, weight_on_surplus=True, name="mirror_percentage",
-    funtion_to_dimention=None,
-    
-    **kwargs):
+    def __init__(
+        self,
+        ratio=None,
+        loss_to_use=None,
+        weight_on_surplus=True,
+        name="mirror_percentage",
+        funtion_to_dimention=None,
+        **kwargs,
+    ):
         if loss_to_use is None:
             loss_to_use = keras.losses.MeanSquaredError()
-        self.loss_to_use=loss_to_use
+        self.loss_to_use = loss_to_use
         self.ratio = ratio
         self.weight_on_surplus = weight_on_surplus
         self.funtion_to_dimention = funtion_to_dimention
@@ -334,7 +364,9 @@ class MirrorPercentage(Loss):
                 self.funtion_to_dimention = ops.sqrt
         super().__init__(name=name, **kwargs)
 
-    def _calculate_loss(self, true_values, pred_values, prefix, overal_avg_true=None):
+    def _calculate_loss(
+        self, true_values, pred_values, prefix, overal_avg_true=None
+    ):
         loss = self.loss_to_use(true_values, pred_values)
 
         # if overal_avg_pred:
@@ -348,7 +380,9 @@ class MirrorPercentage(Loss):
         epsilon = 1e-8
 
         # Normalize the losses
-        norm_loss = ops.abs((loss + epsilon) / (overal_avg_true + epsilon))*100
+        norm_loss = (
+            ops.abs((loss + epsilon) / (overal_avg_true + epsilon)) * 100
+        )
 
         return norm_loss
 
@@ -357,22 +391,33 @@ class MirrorPercentage(Loss):
         # overal_avg_pred = ops.mean(y_pred)
         overal_avg_true = ops.mean(y_true)
 
-        m_mask = erro<0
-        s_mask = erro>=0
+        m_mask = erro < 0
+        s_mask = erro >= 0
         # z_mask = erro == 0
-
 
         true_m = y_true[m_mask]
         true_s = y_true[s_mask]
         pred_m = y_pred[m_mask]
         pred_s = y_pred[s_mask]
-        
+
         # true_z = y_true[z_mask] # True values for erro == 0
         # pred_z = y_pred[z_mask] # Predicted values for erro == 0
-        
+
         # Calculate the loss for m_mask, s_mask, and z_mask
-        norm_m_loss = self._calculate_loss(true_m, pred_m, "m",overal_avg_true=overal_avg_true) if ops.size(pred_m) else ops.convert_to_tensor(0)
-        norm_s_loss = self._calculate_loss(true_s, pred_s, "s",overal_avg_true=overal_avg_true) if ops.size(pred_s) else ops.convert_to_tensor(0)
+        norm_m_loss = (
+            self._calculate_loss(
+                true_m, pred_m, "m", overal_avg_true=overal_avg_true
+            )
+            if ops.size(pred_m)
+            else ops.convert_to_tensor(0)
+        )
+        norm_s_loss = (
+            self._calculate_loss(
+                true_s, pred_s, "s", overal_avg_true=overal_avg_true
+            )
+            if ops.size(pred_s)
+            else ops.convert_to_tensor(0)
+        )
         # norm_z_loss = self._calculate_loss(true_z, pred_z, 'z', overal_avg_pred=overal_avg_pred) if ops.size(pred_z) else ops.convert_to_tensor(0) # New loss calculation for erro == 0
 
         return ops.mean([norm_m_loss, norm_s_loss])
@@ -381,24 +426,28 @@ class MirrorPercentage(Loss):
         base_config = super().get_config()
         return {
             **base_config,
-            'ratio': self.ratio,
-            'ratio_m': self.ratio_m,
-            'ratio_s': self.ratio_s,
-            'loss_to_use': self.loss_to_use,
-            "ratio_on_weigths":self.ratio_on_weigths,
-            "loss_to_use":self.loss_to_use,
+            "ratio": self.ratio,
+            "ratio_m": self.ratio_m,
+            "ratio_s": self.ratio_s,
+            "loss_to_use": self.loss_to_use,
+            "ratio_on_weigths": self.ratio_on_weigths,
         }
 
 
 class MirrorNormalized(Loss):
     # Only works properly for losses where the return is the same dimension as predict: rmse, mae
-    def __init__(self, ratio=None, loss_to_use=None, weight_on_surplus=True, name="mirror_normalized",
-    funtion_to_dimention=None,
-    
-    **kwargs):
+    def __init__(
+        self,
+        ratio=None,
+        loss_to_use=None,
+        weight_on_surplus=True,
+        name="mirror_normalized",
+        funtion_to_dimention=None,
+        **kwargs,
+    ):
         if loss_to_use is None:
             loss_to_use = keras.losses.MeanSquaredError()
-        self.loss_to_use=loss_to_use
+        self.loss_to_use = loss_to_use
         self.ratio = ratio
         self.weight_on_surplus = weight_on_surplus
         self.funtion_to_dimention = funtion_to_dimention
@@ -409,42 +458,41 @@ class MirrorNormalized(Loss):
                 self.funtion_to_dimention = ops.sqrt
         super().__init__(name=name, **kwargs)
 
- 
-
     def call(self, y_true, y_pred):
         erro = y_pred - y_true
         # overal_avg_pred = ops.mean(y_pred)
         ops.mean(y_true)
 
-        m_mask = erro<0
-        s_mask = erro>=0
+        m_mask = erro < 0
+        s_mask = erro >= 0
         # z_mask = erro == 0
-
 
         true_m = y_true[m_mask]
         true_s = y_true[s_mask]
         pred_m = y_pred[m_mask]
         pred_s = y_pred[s_mask]
-        
+
         # Compute the means and variances of true and predicted values for both positive and negative errors
-        m_mean, m_var = ops.mean(ops.concatenate([true_m,pred_m])), ops.var(ops.concatenate([true_m,pred_m]))
-        s_mean, s_var = ops.mean(ops.concatenate([true_s,pred_s])), ops.var(ops.concatenate([true_s,pred_s]))
+        m_mean, m_var = ops.mean(ops.concatenate([true_m, pred_m])), ops.var(
+            ops.concatenate([true_m, pred_m])
+        )
+        s_mean, s_var = ops.mean(ops.concatenate([true_s, pred_s])), ops.var(
+            ops.concatenate([true_s, pred_s])
+        )
         # Add a small constant to avoid division by zero
 
         m_var += 1e-10
         s_var += 1e-10
 
         # Normalize the true and predicted values
-        true_m_normalized = (((true_m - m_mean) / ops.sqrt(m_var))+1)*100
-        true_s_normalized = (((true_s - s_mean) / ops.sqrt(s_var))+1)*100
-        pred_m_normalized = (((pred_m - m_mean) / ops.sqrt(m_var))+1)*100
-        pred_s_normalized = (((pred_s - s_mean) / ops.sqrt(s_var))+1)*100
+        true_m_normalized = (((true_m - m_mean) / ops.sqrt(m_var)) + 1) * 100
+        true_s_normalized = (((true_s - s_mean) / ops.sqrt(s_var)) + 1) * 100
+        pred_m_normalized = (((pred_m - m_mean) / ops.sqrt(m_var)) + 1) * 100
+        pred_s_normalized = (((pred_s - s_mean) / ops.sqrt(s_var)) + 1) * 100
 
         # Compute the loss on the normalized values
         m_loss = self.loss_to_use(true_m_normalized, pred_m_normalized)
         s_loss = self.loss_to_use(true_s_normalized, pred_s_normalized)
-
-
 
         return ops.mean([m_loss, s_loss])
 
@@ -452,37 +500,37 @@ class MirrorNormalized(Loss):
         base_config = super().get_config()
         return {
             **base_config,
-            'ratio': self.ratio,
-            'ratio_m': self.ratio_m,
-            'ratio_s': self.ratio_s,
-            'loss_to_use': self.loss_to_use,
-            "ratio_on_weigths":self.ratio_on_weigths,
-            "loss_to_use":self.loss_to_use,
+            "ratio": self.ratio,
+            "ratio_m": self.ratio_m,
+            "ratio_s": self.ratio_s,
+            "loss_to_use": self.loss_to_use,
+            "ratio_on_weigths": self.ratio_on_weigths,
         }
 
 
-
 class DerivativeLoss(Loss):
-    def __init__(self,name="derivative_loss",loss_to_use=None,**kwargs):
+    def __init__(
+        self, name="derivative_loss", loss_to_use=None, axis=-1, **kwargs
+    ):
         if loss_to_use is None:
             loss_to_use = keras.losses.MeanSquaredError()
-        self.loss_to_use=loss_to_use
+        self.axis = axis
+        self.loss_to_use = loss_to_use
         name = f"{name}_{loss_to_use.name}"
         super().__init__(name=name, **kwargs)
 
     def call(self, y_true, y_pred):
-        diff = y_pred - y_true
-        derivative_truth = ops.diff(y_true.ravel())
-        derivative_pred = ops.diff(y_pred.ravel())
-
+        derivative_truth = ops.diff(y_true, axis=self.axis)
+        derivative_pred = ops.diff(y_pred, axis=self.axis)
         return self.loss_to_use(derivative_truth, derivative_pred)
 
     def get_config(self):
         base_config = super().get_config()
         return {
             **base_config,
-            "loss_to_use":self.loss_to_use,
+            "loss_to_use": self.loss_to_use,
         }
+
 
 # class AdvanceSlopeLoss(Loss):
 #     def __init__(self,name="advance_slope_loss",loss_to_use=None,**kwargs):
@@ -506,3 +554,48 @@ class DerivativeLoss(Loss):
 #             **base_config,
 #             "loss_to_use":self.loss_to_use,
 #         }
+
+
+class JointLoss(Loss):
+    def __init__(
+        self,
+        name="joint_loss",
+        loss_to_use=None,
+        operation=None,
+        operation_kwargs=None,
+        **kwargs,
+    ):
+        if loss_to_use is None:
+            loss_to_use = keras.losses.MeanSquaredError()
+
+        if not isinstance(loss_to_use, list):
+            loss_to_use = [loss_to_use]
+        self.loss_to_use = loss_to_use
+        self.operation = operation or ops.multiply
+
+        self.operation_kwargs = operation_kwargs or {}
+
+        name = f"{name}"
+        for loss in loss_to_use:
+            name += f"_{loss.name}"
+        super().__init__(name=name, **kwargs)
+
+    def call(self, y_true, y_pred):
+        result = None
+        for loss in self.loss_to_use:
+            if result is None:
+                result = loss(y_true, y_pred)
+            else:
+                result = self.operation(
+                    result, loss(y_true, y_pred), **self.operation_kwargs
+                )
+        return result
+
+    def get_config(self):
+        base_config = super().get_config()
+        return {
+            **base_config,
+            "loss_to_use": self.loss_to_use,
+            "operation": self.operation,
+            "operation_kwargs": self.operation_kwargs,
+        }

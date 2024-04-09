@@ -36,7 +36,9 @@ def update_history_dict(new_log, old_log):
                 if not isinstance(old, list):
                     old = [old]
                 old = [float(f) for f in old if f]
-                old = [f for f in old if not math.isnan(f) and not math.isinf(f)]
+                old = [
+                    f for f in old if not math.isnan(f) and not math.isinf(f)
+                ]
                 history_to_save[key] = old + new
     for key in new_log:
         if key not in history_to_save:
