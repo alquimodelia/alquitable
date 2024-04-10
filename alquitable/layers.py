@@ -1,6 +1,6 @@
 import keras
 from keras import ops
-from keras.layers import Dense, Embedding
+from keras.layers import Dense, Embedding, Layer, RandomFlip
 
 
 class Patches(keras.Layer):
@@ -153,3 +153,61 @@ class Time2Vec(keras.Layer):
     @classmethod
     def from_config(cls, config):
         return cls(**config)
+
+
+class RandomFlipNDimensions(Layer):
+    def __init__(self, mode="horizontal_and_vertical", seed=None, **kwargs):
+        super(RandomFlipNDimensions, self).__init__(**kwargs)
+
+        self.flip_layer = RandomFlip(mode=mode, seed=seed)
+
+    def call(self, inputs):
+        # Assuming inputs is a ND tensor with shape (... , height, width, bands)
+        # Apply RandomFlip to each image in the batch
+        if len(inputs.shape) <= 4:
+            concatenated_flipped_images = self.flip_layer(inputs)
+        else:
+            flipped_images = []
+            for i in inputs:
+                img = i
+                if len(i.shape) > 4:
+                    flipped_image = self.call(img)
+                else:
+                    flipped_image = self.flip_layer(img)
+                flipped_images.append(flipped_image)
+            concatenated_flipped_images = ops.stack(flipped_images)
+        return concatenated_flipped_images
+
+    def compute_output_shape(self, input_shape):
+        # The output shape is the same as the input shape since we're flipping in-place
+        return input_shape
+
+
+class StackRandomFlips(Layer):
+    def __init__(self, modes=None, seed=None, **kwargs):
+        self.seed = seed
+        self.modes = modes or [
+            "horizontal_and_vertical",
+            "horizontal",
+            "vertical",
+        ]
+        super(StackRandomFlips, self).__init__(**kwargs)
+
+    def call(self, inputs):
+        flipped_images = []
+        for mode in self.modes:
+            flipped_image = RandomFlipNDimensions(mode=mode, seed=self.seed)(
+                inputs
+            )
+            flipped_images.append(flipped_image)
+        # Concatenate all flipped images along the batch dimension
+        concatenated_flipped_images = ops.concatenate(flipped_images)
+        return concatenated_flipped_images
+
+    def compute_output_shape(self, input_shape):
+        batch_size = input_shape[0] if input_shape[0] is not None else None
+        new_batch_size = (
+            batch_size * len(self.modes) if batch_size is not None else None
+        )
+        output_shape = (new_batch_size, *input_shape[1:])
+        return output_shape
