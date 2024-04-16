@@ -194,7 +194,7 @@ class StackRandomFlips(Layer):
         super(StackRandomFlips, self).__init__(**kwargs)
 
     def call(self, inputs):
-        flipped_images = []
+        flipped_images = [inputs]
         for mode in self.modes:
             flipped_image = RandomFlipNDimensions(mode=mode, seed=self.seed)(
                 inputs
@@ -207,7 +207,9 @@ class StackRandomFlips(Layer):
     def compute_output_shape(self, input_shape):
         batch_size = input_shape[0] if input_shape[0] is not None else None
         new_batch_size = (
-            batch_size * len(self.modes) if batch_size is not None else None
+            batch_size * (len(self.modes) + 1)
+            if batch_size is not None
+            else None
         )
         output_shape = (new_batch_size, *input_shape[1:])
         return output_shape
