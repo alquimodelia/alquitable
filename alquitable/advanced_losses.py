@@ -1,10 +1,36 @@
+import importlib
+
 import keras
 from keras import Loss, ops
 
-from alquitable.losses import SumSquaredError
+
+class AdvanceLoss(Loss):
+    """
+    Wrapper on Loss to be able to have a Loss wich can use different losses.
+    """
+
+    def __init__(self, loss_to_use=None, name=None, **kwargs):
+        if loss_to_use is None:
+            loss_to_use = keras.losses.MeanSquaredError()
+        if isinstance(loss_to_use, dict):
+            module = importlib.import_module(loss_to_use["module"])
+            # Assuming the loss func is a Loss
+            loss_cls = getattr(module, loss_to_use["class_name"])
+            loss_to_use = loss_cls.from_config(config=loss_to_use["config"])
+        self.loss_to_use = loss_to_use
+        name = f"{name}_{loss_to_use.name}"
+
+        super().__init__(name=name, **kwargs)
+
+    def get_config(self):
+        base_config = super().get_config()
+        return {
+            **base_config,
+            "loss_to_use": self.loss_to_use,
+        }
 
 
-def mirror_weights(ratio=None, loss_to_use=None, weight_on_surplus=True):
+class MirrorWeights(AdvanceLoss):
     """
     Create a custom loss function that assigns weights to predictions and true values.
 
@@ -51,38 +77,7 @@ def mirror_weights(ratio=None, loss_to_use=None, weight_on_surplus=True):
         A loss function that assigns weights to predictions and true values based on
         the rules described above, and uses `loss_to_use` to calculate the final loss.
     """
-    if loss_to_use is None:
-        loss_to_use = keras.losses.MeanSquaredError()
 
-    # bigger than 1 ration will give more weight pred values lower than true
-    @keras.saving.register_keras_serializable()
-    def loss(y_true, y_pred):
-        diff = y_pred - y_true
-
-        greater = ops.greater(diff, 0)
-        # 0 for lower, 1 for greater
-        greater = ops.cast(greater, keras.backend.floatx())
-        # 1 for lower, 2 for greater
-        greater = greater + 1
-
-        # Now is at 1:2 ratio
-        surplus_values = 1 if ratio is None else ratio
-        missing_values = 1 if ratio is None else ratio
-
-        if ratio is None:
-            if weight_on_surplus:
-                surplus_values = ops.maximum(0.0, -diff)
-            else:
-                missing_values = ops.maximum(0.0, diff)
-
-        weights = ops.where(greater == 1, surplus_values, missing_values)
-
-        return loss_to_use(y_true, y_pred, sample_weight=weights)
-
-    return loss
-
-
-class MirrorWeights(Loss):
     def __init__(
         self,
         ratio=None,
@@ -94,16 +89,12 @@ class MirrorWeights(Loss):
         ratio_on_weigths=False,
         **kwargs,
     ):
-        if loss_to_use is None:
-            loss_to_use = keras.losses.MeanSquaredError()
-        self.loss_to_use = loss_to_use
         self.ratio_on_weigths = ratio_on_weigths
         self.ratio = ratio
         self.ratio_m = ratio_m
         self.ratio_s = ratio_s
         self.weight_on_surplus = weight_on_surplus
-        name = f"{name}_{loss_to_use.name}"
-        super().__init__(name=name, **kwargs)
+        super().__init__(name=name, loss_to_use=loss_to_use, **kwargs)
 
     def call(self, y_true, y_pred):
         diff = y_pred - y_true
@@ -148,13 +139,12 @@ class MirrorWeights(Loss):
             "ratio": self.ratio,
             "ratio_m": self.ratio_m,
             "ratio_s": self.ratio_s,
-            "loss_to_use": self.loss_to_use,
             "weight_on_surplus": self.weight_on_surplus,
             "ratio_on_weigths": self.ratio_on_weigths,
         }
 
 
-class MirrorLoss(Loss):
+class MirrorLoss(AdvanceLoss):
     # Cuts of the diference in sampling number around the surplus and missing error
     def __init__(
         self,
@@ -166,15 +156,12 @@ class MirrorLoss(Loss):
         name="mirror_loss",
         **kwargs,
     ):
-        if loss_to_use is None:
-            loss_to_use = keras.losses.MeanSquaredError()
         self.loss_to_use = loss_to_use
         self.ratio = ratio
         self.ratio_m = ratio_m
         self.ratio_s = ratio_s
         self.weight_on_surplus = weight_on_surplus
-        name = f"{name}_{loss_to_use.name}"
-        super().__init__(name=name, **kwargs)
+        super().__init__(name=name, loss_to_use=loss_to_use, **kwargs)
 
     def _mean_losses(self, m_loss, s_loss):
         # ratio = self.ratio or 1
@@ -207,12 +194,11 @@ class MirrorLoss(Loss):
             "ratio": self.ratio,
             "ratio_m": self.ratio_m,
             "ratio_s": self.ratio_s,
-            "loss_to_use": self.loss_to_use,
             "ratio_on_weigths": self.ratio_on_weigths,
         }
 
 
-class MirrorLossNorm(Loss):
+class MirrorLossNorm(AdvanceLoss):
     # Cuts of the diference in sampling number around the surplus and missing error
     def __init__(
         self,
@@ -224,15 +210,11 @@ class MirrorLossNorm(Loss):
         name="mirror_loss_norm",
         **kwargs,
     ):
-        if loss_to_use is None:
-            loss_to_use = SumSquaredError()
-        self.loss_to_use = loss_to_use
         self.ratio = ratio
         self.ratio_m = ratio_m
         self.ratio_s = ratio_s
         self.weight_on_surplus = weight_on_surplus
-        name = f"{name}_{loss_to_use.name}"
-        super().__init__(name=name, **kwargs)
+        super().__init__(name=name, loss_to_use=loss_to_use, **kwargs)
 
     def _mean_losses(self, m_loss, s_loss):
         # ratio = self.ratio or 1
@@ -269,12 +251,11 @@ class MirrorLossNorm(Loss):
             "ratio": self.ratio,
             "ratio_m": self.ratio_m,
             "ratio_s": self.ratio_s,
-            "loss_to_use": self.loss_to_use,
             "ratio_on_weigths": self.ratio_on_weigths,
         }
 
 
-class MirrorLossNormMinMax(Loss):
+class MirrorLossNormMinMax(AdvanceLoss):
     # Cuts of the diference in sampling number around the surplus and missing error
     def __init__(
         self,
@@ -286,15 +267,11 @@ class MirrorLossNormMinMax(Loss):
         name="mirror_loss_norm_min_max",
         **kwargs,
     ):
-        if loss_to_use is None:
-            loss_to_use = SumSquaredError()
-        self.loss_to_use = loss_to_use
         self.ratio = ratio
         self.ratio_m = ratio_m
         self.ratio_s = ratio_s
         self.weight_on_surplus = weight_on_surplus
-        name = f"{name}_{loss_to_use.name}"
-        super().__init__(name=name, **kwargs)
+        super().__init__(name=name, loss_to_use=loss_to_use, **kwargs)
 
     def _mean_losses(self, m_loss, s_loss):
         # ratio = self.ratio or 1
@@ -335,12 +312,11 @@ class MirrorLossNormMinMax(Loss):
             "ratio": self.ratio,
             "ratio_m": self.ratio_m,
             "ratio_s": self.ratio_s,
-            "loss_to_use": self.loss_to_use,
             "ratio_on_weigths": self.ratio_on_weigths,
         }
 
 
-class MirrorPercentage(Loss):
+class MirrorPercentage(AdvanceLoss):
     # Only works properly for losses where the return is the same dimension as predict: rmse, mae
     def __init__(
         self,
@@ -351,18 +327,14 @@ class MirrorPercentage(Loss):
         funtion_to_dimention=None,
         **kwargs,
     ):
-        if loss_to_use is None:
-            loss_to_use = keras.losses.MeanSquaredError()
-        self.loss_to_use = loss_to_use
         self.ratio = ratio
         self.weight_on_surplus = weight_on_surplus
         self.funtion_to_dimention = funtion_to_dimention
 
-        name = f"{name}_{loss_to_use.name}"
+        super().__init__(name=name, loss_to_use=loss_to_use, **kwargs)
         if funtion_to_dimention is None:
             if isinstance(self.loss_to_use, keras.losses.MeanSquaredError):
                 self.funtion_to_dimention = ops.sqrt
-        super().__init__(name=name, **kwargs)
 
     def _calculate_loss(
         self, true_values, pred_values, prefix, overal_avg_true=None
@@ -429,12 +401,11 @@ class MirrorPercentage(Loss):
             "ratio": self.ratio,
             "ratio_m": self.ratio_m,
             "ratio_s": self.ratio_s,
-            "loss_to_use": self.loss_to_use,
             "ratio_on_weigths": self.ratio_on_weigths,
         }
 
 
-class MirrorNormalized(Loss):
+class MirrorNormalized(AdvanceLoss):
     # Only works properly for losses where the return is the same dimension as predict: rmse, mae
     def __init__(
         self,
@@ -445,18 +416,14 @@ class MirrorNormalized(Loss):
         funtion_to_dimention=None,
         **kwargs,
     ):
-        if loss_to_use is None:
-            loss_to_use = keras.losses.MeanSquaredError()
-        self.loss_to_use = loss_to_use
         self.ratio = ratio
         self.weight_on_surplus = weight_on_surplus
         self.funtion_to_dimention = funtion_to_dimention
 
-        name = f"{name}_{loss_to_use.name}"
+        super().__init__(name=name, loss_to_use=loss_to_use, **kwargs)
         if funtion_to_dimention is None:
             if isinstance(self.loss_to_use, keras.losses.MeanSquaredError):
                 self.funtion_to_dimention = ops.sqrt
-        super().__init__(name=name, **kwargs)
 
     def call(self, y_true, y_pred):
         erro = y_pred - y_true
@@ -503,21 +470,17 @@ class MirrorNormalized(Loss):
             "ratio": self.ratio,
             "ratio_m": self.ratio_m,
             "ratio_s": self.ratio_s,
-            "loss_to_use": self.loss_to_use,
             "ratio_on_weigths": self.ratio_on_weigths,
         }
 
 
-class DerivativeLoss(Loss):
+class DerivativeLoss(AdvanceLoss):
     def __init__(
         self, name="derivative_loss", loss_to_use=None, axis=-1, **kwargs
     ):
-        if loss_to_use is None:
-            loss_to_use = keras.losses.MeanSquaredError()
         self.axis = axis
         self.loss_to_use = loss_to_use
-        name = f"{name}_{loss_to_use.name}"
-        super().__init__(name=name, **kwargs)
+        super().__init__(name=name, loss_to_use=loss_to_use, **kwargs)
 
     def call(self, y_true, y_pred):
         derivative_truth = ops.diff(y_true, axis=self.axis)
@@ -528,7 +491,7 @@ class DerivativeLoss(Loss):
         base_config = super().get_config()
         return {
             **base_config,
-            "loss_to_use": self.loss_to_use,
+            "axis": self.axis,
         }
 
 

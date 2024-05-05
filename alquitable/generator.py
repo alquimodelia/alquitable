@@ -91,11 +91,11 @@ class DataGenerator(keras.utils.Sequence):
         if self.commun_timesteps < 0:
             y_alloc = y_alloc + abs(self.commun_timesteps)
         total_batches = self.dataset_size - sum([self.x_batch, y_alloc]) + 1
-        return int(math.ceil(total_batches / self.skiping_step))
+        total_size = int(math.ceil(total_batches / self.skiping_step))
+        return total_size
 
     def __getitem__(self, index):
         ind = index * self.skiping_step
-
         limit_point = ind + self.x_batch
         y_limti_point = limit_point - self.commun_timesteps
         X = self.x[ind:limit_point]
