@@ -562,3 +562,129 @@ class JointLoss(Loss):
             "operation": self.operation,
             "operation_kwargs": self.operation_kwargs,
         }
+
+
+class NanValueLoss(AdvanceLoss):
+    def __init__(
+        self,
+        loss_to_use=None,
+        nan_value=None,
+        name="nan_value_loss",
+        nan_value_loss=-10,
+        **kwargs,
+    ):
+        self.nan_value = nan_value
+        self.nan_value_loss = nan_value_loss
+        super().__init__(name=name, loss_to_use=loss_to_use, **kwargs)
+
+    def call(self, y_true, y_pred):
+        flatten_y_true = ops.ravel(y_true)
+        flatten_y_pred = ops.ravel(y_pred)
+        valid_mask = ops.not_equal(flatten_y_true, self.nan_value)
+        # REPLACE zero with a negative number in true, then make the nan zero, then take indices of zero
+
+        # ops.take(flatten_y_pred, [2, 3, 4, 5])
+        # flatten_y_true_neg = ops.where(
+        #     flatten_y_true == 0, flatten_y_true, self.nan_value_loss
+        # )
+
+        # flatten_y_true_neg = ops.where(valid_mask, flatten_y_true_neg, 0)
+        # ops.nonzero(flatten_y_true_neg)
+
+        # #s = ops.outer(flatten_y_true, valid_mask)
+        masked_y_pred = ops.take(flatten_y_pred, ops.where(valid_mask))
+        masked_y_true = flatten_y_true[valid_mask]
+
+        # Apply the mask element-wise
+        masked_y_true = ops.take(y_true, ops.where(valid_mask))
+        masked_y_pred = ops.take(y_pred, ops.where(valid_mask))
+        return self.loss_to_use(masked_y_true, masked_y_pred)
+
+    def get_config(self):
+        base_config = super().get_config()
+        return {
+            **base_config,
+            "nan_value": self.nan_value,
+        }
+
+
+class NanValueLossA(Loss):
+    def __init__(
+        self,
+        loss_to_use=None,
+        nan_value=None,
+        name="nan_value_loss",
+        nan_value_loss=-10,
+        **kwargs,
+    ):
+        self.nan_value = nan_value
+        self.nan_value_loss = nan_value_loss
+        self.loss_to_use = loss_to_use
+        super().__init__(name=name, **kwargs)
+
+    def call(self, y_true, y_pred):
+
+        valid_mask = ops.not_equal(y_true, self.nan_value)
+        return self.loss_to_use(y_true[valid_mask], y_pred[valid_mask])
+
+
+class NanValueLossB(Loss):
+    def __init__(
+        self,
+        loss_to_use=None,
+        nan_value=None,
+        name="nan_value_loss",
+        nan_value_loss=-10,
+        **kwargs,
+    ):
+        self.nan_value = nan_value
+        self.nan_value_loss = nan_value_loss
+        self.loss_to_use = loss_to_use
+        super().__init__(name=name, **kwargs)
+
+    def call(self, y_true, y_pred):
+
+        valid_mask = ops.not_equal(y_true, self.nan_value)
+        valid_indices = ops.where(valid_mask)
+        masked_y_pred = ops.take(y_pred, valid_indices)
+        masked_y_true = ops.take(y_true, valid_indices)
+
+        return self.loss_to_use(masked_y_true, masked_y_pred)
+
+
+class NanValueLossZerod(AdvanceLoss):
+    def __init__(
+        self,
+        loss_to_use=None,
+        nan_value=None,
+        name="nan_value_loss",
+        mask_with_weights=False,
+        **kwargs,
+    ):
+        self.nan_value = nan_value
+        self.mask_with_weights = mask_with_weights
+        super().__init__(name=name, loss_to_use=loss_to_use, **kwargs)
+
+    def call(self, y_true, y_pred):
+        # REPLACE zero with a negative number in true, then make the nan zero, then take indices of zero
+        extra_args = {}
+        if self.nan_value == self.nan_value:
+            y_true_zerod = ops.where(y_true == self.nan_value, 0, y_true)
+            y_pred_zerod = ops.where(y_true == self.nan_value, 0, y_pred)
+            masked_weights = ops.where(y_true == self.nan_value, 0, 1)
+        else:
+            y_true_zerod = ops.where(y_true != y_true, 0, y_true)
+            y_pred_zerod = ops.where(y_true != y_true, 0, y_pred)
+            masked_weights = ops.where(y_true != y_true, 0, 1)
+
+        if self.mask_with_weights:
+            extra_args["sample_weight"] = masked_weights
+
+        return self.loss_to_use(y_true_zerod, y_pred_zerod, **extra_args)
+
+    def get_config(self):
+        base_config = super().get_config()
+        return {
+            **base_config,
+            "nan_value": self.nan_value,
+        }

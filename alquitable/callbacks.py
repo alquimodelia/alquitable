@@ -80,6 +80,10 @@ class SaveModelCallback(Callback):
         """
         super(SaveModelCallback, self).__init__()
         self.save_frequency = save_frequency
+        if "{epoch}" not in model_keras_filename:
+            model_keras_filename = (
+                model_keras_filename.replace(".keras", "") + "_{epoch}.keras"
+            )
         self.model_keras_filename = model_keras_filename
         self.model_log_filename = model_log_filename
         self.start_epoch = start_epoch
