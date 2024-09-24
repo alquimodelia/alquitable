@@ -614,12 +614,10 @@ class NanValueLossA(Loss):
         loss_to_use=None,
         nan_value=None,
         name="nan_value_loss",
-        nan_value_loss=-10,
         **kwargs,
     ):
         self.nan_value = nan_value
-        self.nan_value_loss = nan_value_loss
-        self.loss_to_use = loss_to_use
+        self.loss_to_use = loss_to_use or keras.losses.MeanSquaredError()
         super().__init__(name=name, **kwargs)
 
     def call(self, y_true, y_pred):
