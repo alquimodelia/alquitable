@@ -1,6 +1,7 @@
 import json
 import math
 import os
+import numpy as np
 
 from keras.callbacks import Callback
 
@@ -224,3 +225,84 @@ class StopOnNanLoss(Callback):
             # )
             # if os.path.exists(unfinished):
             #     os.remove(unfinished)
+
+
+
+class SaveModelOnValdidationCallback(Callback):
+    """
+    A Keras callback that saves the model at specified frequency when validation loss improves.
+
+    This callback saves the model at the end of every specified epoch if the validation loss is better than the previous.
+    It also saves the training logs to a JSON file.
+    """
+
+    def __init__(
+        self,
+        model_keras_filename,
+        model_log_filename,
+        logs=None,
+        metric="val_loss"
+    ):
+        """
+        Initialize the SaveModelCallback.
+
+        Parameters
+        ----------
+        save_frequency : int
+            The frequency of saving the model, in terms of epochs.
+        model_keras_filename : str
+            The filename of the saved model.
+        model_log_filename : str
+            The filename of the saved log.
+        logs : dict, optional
+            The training logs. If not provided, an empty dictionary will be used.
+        """
+        super(SaveModelOnValdidationCallback, self).__init__()
+        self.model_keras_filename = model_keras_filename
+        self.model_log_filename = model_log_filename
+        self.metric = metric
+        best_val_loss = None
+        if os.path.exists(self.model_log_filename):
+            with open(self.model_log_filename, 'r') as json_file:
+                    old_history = json.load(json_file)
+            logs=old_history
+            best_val_loss=float(np.min(old_history[self.metric]))
+        self.logs = logs or {}
+        self.best_val_loss = best_val_loss or float('inf')  # Initialize with infinity
+
+    def on_epoch_end(self, epoch, logs=None):
+        """
+        Save the model and log at the end of an epoch if validation loss improves.
+
+        Parameters
+        ----------
+        epoch : int
+            The current epoch.
+        logs : dict, optional
+            The training logs. If not provided, an empty dictionary will be used.
+        """
+        self.logs = update_history_dict(logs, self.logs)
+
+        
+        # Check if validation loss has improved
+        if logs[self.metric] < self.best_val_loss:
+            self.best_val_loss = logs[self.metric]
+            
+            # Save the model
+            model_save_name = self.model_keras_filename
+            self.model.save(model_save_name)
+            self.model.save_weights(model_save_name.replace(".keras", ".weights.h5"))
+            with open(self.model_log_filename, "w") as f:
+                json.dump(self.logs, f, indent=4)
+
+
+    def get_config(self):
+        base_config = super().get_config()
+        return {
+            **base_config,
+        "model_keras_filename":self.model_keras_filename,
+        "model_log_filename":self.model_log_filename,
+        "logs":self.logs,
+        "best_val_loss":self.best_val_loss,
+        "metric":self.metric,
+        }
